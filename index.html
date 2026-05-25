@@ -193,9 +193,13 @@
     .back-btn svg { width: 16px; height: 16px; }
 
     .profile-hero {
-      padding: 20px 16px 16px;
+      padding: 22px 16px 18px;
       border-bottom: 0.5px solid var(--border);
       display: flex; gap: 16px; align-items: flex-start;
+      background: radial-gradient(120% 140% at 0% 0%, rgba(224,48,48,0.10), transparent 55%);
+    }
+    .profile-hero.champ {
+      background: radial-gradient(120% 140% at 0% 0%, rgba(212,165,32,0.12), transparent 55%);
     }
     .profile-avatar {
       width: 68px; height: 68px;
@@ -216,7 +220,13 @@
       line-height: 1.1;
     }
     .profile-nick { font-size: 13px; color: var(--text2); font-style: italic; margin-top: 2px; }
-    .profile-div { font-size: 12px; color: var(--text2); margin-top: 6px; display: flex; align-items: center; gap: 6px; }
+    .profile-div { font-size: 12px; color: var(--text2); margin-top: 6px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .profile-rec-line {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px; font-weight: 700; letter-spacing: 0.5px;
+      margin-top: 8px; color: var(--text);
+    }
+    .profile-rec-line .nc { color: var(--text3); font-size: 13px; font-weight: 600; }
 
     .stats-grid {
       display: grid; grid-template-columns: repeat(3, 1fr);
@@ -236,21 +246,40 @@
     .stat-val.w { color: var(--win); }
     .stat-val.l { color: var(--loss); }
     .stat-val.nc { color: var(--text3); }
+    .stat-val.rate { color: var(--accent); }
     .stat-lbl { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px; }
 
-    .methods-row {
-      padding: 12px 16px;
+    .methods-section {
+      padding: 14px 16px;
       border-bottom: 0.5px solid var(--border);
-      display: flex; gap: 8px; flex-wrap: wrap;
     }
-    .method-pill {
-      background: var(--bg2);
-      border: 0.5px solid var(--border);
-      border-radius: 20px;
-      padding: 5px 12px;
-      font-size: 12px; color: var(--text2);
+    .methods-head {
+      display: flex; align-items: baseline; justify-content: space-between;
+      margin-bottom: 10px;
     }
-    .method-pill strong { color: var(--text); font-weight: 600; }
+    .methods-title {
+      font-size: 11px; font-weight: 600; color: var(--text3);
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+    .methods-finish { font-size: 12px; color: var(--text2); }
+    .methods-finish strong { color: var(--accent); font-weight: 700; }
+    .method-bar {
+      display: flex; height: 8px; border-radius: 6px; overflow: hidden;
+      background: var(--bg3); gap: 2px;
+    }
+    .method-bar .seg { min-width: 0; }
+    .method-bar .seg.ko { background: var(--accent); }
+    .method-bar .seg.sub { background: var(--win); }
+    .method-bar .seg.dec { background: var(--text2); }
+    .method-legend {
+      display: flex; gap: 16px; margin-top: 10px; flex-wrap: wrap;
+    }
+    .leg { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); }
+    .leg .dot { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; }
+    .leg .dot.ko { background: var(--accent); }
+    .leg .dot.sub { background: var(--win); }
+    .leg .dot.dec { background: var(--text2); }
+    .leg b { color: var(--text); font-weight: 700; }
 
     .fight-history-lbl {
       padding: 14px 16px 8px;
@@ -286,6 +315,12 @@
 
     /* ── EVENTS ── */
     .events-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 12px; }
+    .events-group-lbl {
+      font-size: 11px; font-weight: 600; color: var(--text3);
+      text-transform: uppercase; letter-spacing: 1px;
+      padding: 8px 2px 0;
+    }
+    .events-group-lbl:first-child { padding-top: 0; }
 
     .event-card {
       background: var(--bg2);
@@ -600,9 +635,17 @@ function showFighter(id) {
   if (!f) return;
   const [w, l, d] = f.record;
   const isChamp = f.ranked === 'Champion';
+  const { KO, Sub, Dec } = f.methods;
+  const decided = w + l;
+  const winRate = decided ? Math.round((w / decided) * 100) : 0;
+  const finishRate = w ? Math.round(((KO + Sub) / w) * 100) : 0;
+  const ncTxt = [
+    d ? `${d} D` : '',
+    f.nc ? `${f.nc} NC` : ''
+  ].filter(Boolean).join(' · ');
 
   document.getElementById('profileContent').innerHTML = `
-    <div class="profile-hero">
+    <div class="profile-hero ${isChamp ? 'champ' : ''}">
       <div class="profile-avatar ${isChamp ? 'champ' : ''}">${initials(f.name)}</div>
       <div>
         <div class="profile-name">${f.name}</div>
@@ -612,17 +655,29 @@ function showFighter(id) {
           <span>${f.div}</span>
           ${isChamp ? '<span style="color:var(--gold)">🏆 Champion</span>' : `<span style="color:var(--text3)">${f.ranked}</span>`}
         </div>
+        <div class="profile-rec-line">${w}-${l}-${d}${ncTxt ? ` <span class="nc">(${ncTxt})</span>` : ''}</div>
       </div>
     </div>
     <div class="stats-grid">
       <div class="stat-box"><div class="stat-val w">${w}</div><div class="stat-lbl">Wins</div></div>
       <div class="stat-box"><div class="stat-val l">${l}</div><div class="stat-lbl">Losses</div></div>
-      <div class="stat-box"><div class="stat-val nc">${d + f.nc}</div><div class="stat-lbl">D / NC</div></div>
+      <div class="stat-box"><div class="stat-val rate">${winRate}%</div><div class="stat-lbl">Win rate</div></div>
     </div>
-    <div class="methods-row">
-      <div class="method-pill">KO/TKO <strong>${f.methods.KO}</strong></div>
-      <div class="method-pill">Submission <strong>${f.methods.Sub}</strong></div>
-      <div class="method-pill">Decision <strong>${f.methods.Dec}</strong></div>
+    <div class="methods-section">
+      <div class="methods-head">
+        <span class="methods-title">Win methods</span>
+        <span class="methods-finish"><strong>${finishRate}%</strong> by finish</span>
+      </div>
+      <div class="method-bar">
+        ${KO ? `<div class="seg ko" style="flex:${KO}"></div>` : ''}
+        ${Sub ? `<div class="seg sub" style="flex:${Sub}"></div>` : ''}
+        ${Dec ? `<div class="seg dec" style="flex:${Dec}"></div>` : ''}
+      </div>
+      <div class="method-legend">
+        <span class="leg"><span class="dot ko"></span>KO/TKO <b>${KO}</b></span>
+        <span class="leg"><span class="dot sub"></span>Submission <b>${Sub}</b></span>
+        <span class="leg"><span class="dot dec"></span>Decision <b>${Dec}</b></span>
+      </div>
     </div>
     <div class="fight-history-lbl">Fight history</div>
     ${f.fights.map(fight => `
@@ -644,8 +699,7 @@ function showFighter(id) {
   showScreen('fighter');
 }
 
-function renderEvents() {
-  document.getElementById('eventsList').innerHTML = EVENTS.map(ev => {
+function eventCard(ev) {
     const upcoming = ev.status === 'upcoming';
     const hasRes = !!ev.main.f1.res;
     return `<div class="event-card">
@@ -684,7 +738,18 @@ function renderEvents() {
         </div>`).join('')}
       </div>` : ''}
     </div>`;
-  }).join('');
+}
+
+function renderEvents() {
+  const byDate = (a, b) => new Date(a.date) - new Date(b.date);
+  const upcoming = EVENTS.filter(e => e.status === 'upcoming').sort(byDate);
+  const past = EVENTS.filter(e => e.status !== 'upcoming').sort((a, b) => byDate(b, a));
+
+  let html = '';
+  if (upcoming.length) html += `<div class="events-group-lbl">Upcoming</div>` + upcoming.map(eventCard).join('');
+  if (past.length) html += `<div class="events-group-lbl">Past results</div>` + past.map(eventCard).join('');
+  if (!html) html = `<div class="empty">No events</div>`;
+  document.getElementById('eventsList').innerHTML = html;
 }
 
 function showScreen(name) {
