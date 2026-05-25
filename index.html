@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f0f0f" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="FightBase" />
+  <title>FightBase — MMA Stats</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --bg: #0f0f0f;
+      --bg2: #181818;
+      --bg3: #222;
+      --border: rgba(255,255,255,0.08);
+      --border2: rgba(255,255,255,0.14);
+      --text: #f0f0f0;
+      --text2: #999;
+      --text3: #666;
+      --accent: #e03030;
+      --accent-dim: rgba(224,48,48,0.12);
+      --win: #3dba58;
+      --loss: #e04040;
+      --draw: #d4a520;
+      --gold: #d4a520;
+      --nav-h: 60px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Barlow', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+      height: 100dvh;
+    }
+
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      max-width: 480px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    /* ── SCREENS ── */
+    .screen {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + 16px);
+    }
+    .screen.hidden { display: none; }
+
+    /* ── TOP BAR ── */
+    .topbar {
+      padding: 16px 16px 12px;
+      border-bottom: 0.5px solid var(--border);
+      background: var(--bg);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .topbar-logo {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--text);
+    }
+    .topbar-logo span { color: var(--accent); }
+    .topbar-sub { font-size: 11px; color: var(--text3); margin-top: 1px; letter-spacing: 0.3px; }
+
+    /* ── SEARCH ── */
+    .search-wrap { padding: 12px 16px; }
+    .search-box {
+      position: relative;
+      background: var(--bg2);
+      border: 0.5px solid var(--border2);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+    }
+    .search-box svg { position: absolute; left: 12px; color: var(--text3); width: 16px; height: 16px; flex-shrink: 0; }
+    .search-box input {
+      width: 100%;
+      background: none;
+      border: none;
+      padding: 11px 12px 11px 38px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 15px;
+      color: var(--text);
+      outline: none;
+    }
+    .search-box input::placeholder { color: var(--text3); }
+
+    /* ── SECTION LABEL ── */
+    .section-lbl {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 0 16px 8px;
+    }
+
+    /* ── FIGHTER LIST ── */
+    .fighter-list { padding: 0 16px; display: flex; flex-direction: column; gap: 8px; }
+
+    .fighter-card {
+      background: var(--bg2);
+      border: 0.5px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: background 0.15s, border-color 0.15s;
+      -webkit-user-select: none; user-select: none;
+    }
+    .fighter-card:active { background: var(--bg3); border-color: var(--border2); }
+
+    .avatar {
+      width: 46px; height: 46px;
+      border-radius: 50%;
+      background: var(--accent-dim);
+      border: 1.5px solid rgba(224,48,48,0.4);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 15px; font-weight: 700;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+    .avatar.champ {
+      background: rgba(212,165,32,0.1);
+      border-color: rgba(212,165,32,0.5);
+      color: var(--gold);
+    }
+
+    .fi-info { flex: 1; min-width: 0; }
+    .fi-name {
+      font-size: 15px; font-weight: 600;
+      color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .fi-nick { font-weight: 400; font-style: italic; color: var(--text2); }
+    .fi-meta { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+    .fi-record { display: flex; align-items: center; gap: 4px; margin-top: 5px; }
+    .rec { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; }
+    .rec.w { color: var(--win); }
+    .rec.l { color: var(--loss); }
+    .rec.d { color: var(--draw); }
+    .rec-sep { color: var(--text3); font-size: 11px; }
+    .nc-lbl { font-size: 11px; color: var(--text3); }
+
+    .badge {
+      font-size: 10px; font-weight: 600;
+      padding: 3px 8px; border-radius: 20px;
+      white-space: nowrap; flex-shrink: 0;
+      letter-spacing: 0.3px;
+    }
+    .badge.champ { background: rgba(212,165,32,0.15); color: var(--gold); border: 0.5px solid rgba(212,165,32,0.3); }
+    .badge.rank { background: var(--accent-dim); color: var(--accent); border: 0.5px solid rgba(224,48,48,0.25); }
+    .badge.ret { background: rgba(255,255,255,0.06); color: var(--text3); border: 0.5px solid var(--border); }
+
+    /* ── FIGHTER PROFILE ── */
+    .profile-topbar {
+      padding: 12px 16px 10px;
+      border-bottom: 0.5px solid var(--border);
+      background: var(--bg);
+      position: sticky; top: 0; z-index: 10;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .back-btn {
+      display: flex; align-items: center; gap: 4px;
+      color: var(--accent); font-size: 14px; font-weight: 500;
+      cursor: pointer; padding: 4px 0;
+      -webkit-user-select: none; user-select: none;
+    }
+    .back-btn:active { opacity: 0.6; }
+    .back-btn svg { width: 16px; height: 16px; }
+
+    .profile-hero {
+      padding: 20px 16px 16px;
+      border-bottom: 0.5px solid var(--border);
+      display: flex; gap: 16px; align-items: flex-start;
+    }
+    .profile-avatar {
+      width: 68px; height: 68px;
+      border-radius: 50%;
+      background: var(--accent-dim);
+      border: 2px solid rgba(224,48,48,0.5);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 24px; font-weight: 700; color: var(--accent);
+      flex-shrink: 0;
+    }
+    .profile-avatar.champ { background: rgba(212,165,32,0.1); border-color: rgba(212,165,32,0.5); color: var(--gold); }
+
+    .profile-name {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 26px; font-weight: 700;
+      color: var(--text); letter-spacing: 0.3px;
+      line-height: 1.1;
+    }
+    .profile-nick { font-size: 13px; color: var(--text2); font-style: italic; margin-top: 2px; }
+    .profile-div { font-size: 12px; color: var(--text2); margin-top: 6px; display: flex; align-items: center; gap: 6px; }
+
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 8px; padding: 14px 16px;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .stat-box {
+      background: var(--bg2);
+      border: 0.5px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 8px; text-align: center;
+    }
+    .stat-val {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 28px; font-weight: 700;
+    }
+    .stat-val.w { color: var(--win); }
+    .stat-val.l { color: var(--loss); }
+    .stat-val.nc { color: var(--text3); }
+    .stat-lbl { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px; }
+
+    .methods-row {
+      padding: 12px 16px;
+      border-bottom: 0.5px solid var(--border);
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .method-pill {
+      background: var(--bg2);
+      border: 0.5px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 12px; color: var(--text2);
+    }
+    .method-pill strong { color: var(--text); font-weight: 600; }
+
+    .fight-history-lbl {
+      padding: 14px 16px 8px;
+      font-size: 11px; font-weight: 600; color: var(--text3);
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+
+    .fight-row {
+      padding: 10px 16px;
+      border-bottom: 0.5px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .fight-res {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 15px; font-weight: 700;
+      flex-shrink: 0;
+    }
+    .fight-res.W { background: rgba(61,186,88,0.12); color: var(--win); }
+    .fight-res.L { background: rgba(224,64,64,0.12); color: var(--loss); }
+    .fight-res.D { background: rgba(212,165,32,0.12); color: var(--draw); }
+    .fight-res.NC { background: rgba(255,255,255,0.05); color: var(--text3); }
+
+    .fight-opp { flex: 1; min-width: 0; }
+    .fight-opp-name { font-size: 14px; font-weight: 600; color: var(--text); }
+    .fight-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+    .fight-right { text-align: right; flex-shrink: 0; }
+    .fight-method { font-size: 13px; font-weight: 600; color: var(--text); }
+    .fight-meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+    /* ── EVENTS ── */
+    .events-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 12px; }
+
+    .event-card {
+      background: var(--bg2);
+      border: 0.5px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .event-head {
+      padding: 12px 14px;
+      border-bottom: 0.5px solid var(--border);
+      display: flex; justify-content: space-between; align-items: flex-start;
+    }
+    .event-name {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: 0.5px;
+    }
+    .event-date { font-size: 12px; color: var(--text2); margin-top: 2px; }
+    .event-venue { font-size: 11px; color: var(--text3); margin-top: 2px; display: flex; align-items: center; gap: 4px; }
+    .status-pill {
+      font-size: 10px; font-weight: 600;
+      padding: 3px 8px; border-radius: 20px;
+      white-space: nowrap;
+    }
+    .status-pill.upcoming { background: var(--accent-dim); color: var(--accent); border: 0.5px solid rgba(224,48,48,0.25); }
+    .status-pill.past { background: rgba(255,255,255,0.05); color: var(--text3); border: 0.5px solid var(--border); }
+
+    .main-event-block { padding: 12px 14px; }
+    .me-label { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+    .matchup { display: flex; align-items: center; gap: 10px; }
+    .fighter-side { flex: 1; }
+    .fighter-side.right { text-align: right; }
+    .me-fighter-name { font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.2; }
+    .me-fighter-rec { font-size: 11px; color: var(--text3); margin-top: 2px; }
+    .me-result { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-top: 4px; }
+    .me-result.W { background: rgba(61,186,88,0.12); color: var(--win); }
+    .me-result.L { background: rgba(224,64,64,0.12); color: var(--loss); }
+    .vs-badge {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: var(--accent-dim); border: 1px solid rgba(224,48,48,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 700; color: var(--accent); flex-shrink: 0;
+    }
+    .result-line {
+      margin-top: 8px; padding-top: 8px;
+      border-top: 0.5px solid var(--border);
+      font-size: 11px; color: var(--text3);
+    }
+    .undercard { padding: 0 14px 10px; display: flex; flex-direction: column; gap: 4px; }
+    .undercard-row { font-size: 12px; color: var(--text2); }
+    .undercard-row .vs-small { color: var(--text3); }
+    .undercard-row .method-small { color: var(--text3); }
+
+    /* ── BOTTOM NAV ── */
+    .bottom-nav {
+      height: calc(var(--nav-h) + var(--safe-bottom));
+      background: var(--bg2);
+      border-top: 0.5px solid var(--border);
+      display: flex;
+      position: absolute; bottom: 0; left: 0; right: 0;
+    }
+    .nav-btn {
+      flex: 1;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 3px;
+      background: none; border: none;
+      color: var(--text3);
+      font-family: 'Barlow', sans-serif;
+      font-size: 10px; font-weight: 500;
+      cursor: pointer;
+      padding-bottom: var(--safe-bottom);
+      -webkit-user-select: none; user-select: none;
+      transition: color 0.15s;
+    }
+    .nav-btn.active { color: var(--accent); }
+    .nav-btn svg { width: 22px; height: 22px; }
+
+    /* ── EMPTY STATE ── */
+    .empty {
+      text-align: center; padding: 60px 24px;
+      color: var(--text3); font-size: 14px;
+    }
+    .empty svg { width: 36px; height: 36px; margin-bottom: 10px; opacity: 0.4; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <!-- SEARCH SCREEN -->
+  <div class="screen" id="screen-search">
+    <div class="topbar">
+      <div class="topbar-logo">FIGHT<span>BASE</span></div>
+      <div class="topbar-sub">MMA fighter &amp; event database</div>
+    </div>
+    <div class="search-wrap">
+      <div class="search-box">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="search" id="searchInput" placeholder="Search fighters, nicknames, divisions…" autocomplete="off" autocorrect="off" spellcheck="false" />
+      </div>
+    </div>
+    <div class="section-lbl" id="listLabel">All fighters</div>
+    <div class="fighter-list" id="fighterList"></div>
+  </div>
+
+  <!-- FIGHTER PROFILE SCREEN -->
+  <div class="screen hidden" id="screen-fighter">
+    <div class="profile-topbar">
+      <div class="back-btn" id="backBtn">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+        Back
+      </div>
+    </div>
+    <div id="profileContent"></div>
+  </div>
+
+  <!-- EVENTS SCREEN -->
+  <div class="screen hidden" id="screen-events">
+    <div class="topbar">
+      <div class="topbar-logo">FIGHT<span>BASE</span></div>
+      <div class="topbar-sub">Recent &amp; upcoming events</div>
+    </div>
+    <div class="events-list" id="eventsList"></div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-tab="search" aria-label="Fighters">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Fighters
+    </button>
+    <button class="nav-btn" data-tab="events" aria-label="Events">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Events
+    </button>
+  </nav>
+</div>
+
+<script>
+const FIGHTERS = [
+  { id:1, name:"Jon Jones", nick:"Bones", div:"Heavyweight", nat:"🇺🇸", record:[28,1,0], nc:1, ranked:"Champion",
+    methods:{KO:10,Sub:6,Dec:12},
+    fights:[
+      {r:"W",opp:"Stipe Miocic",event:"UFC 309",date:"Nov 2024",method:"TKO",round:"R3",time:"4:29"},
+      {r:"W",opp:"Ciryl Gane",event:"UFC 285",date:"Mar 2023",method:"Submission",round:"R1",time:"2:04"},
+      {r:"W",opp:"Dominick Reyes",event:"UFC 247",date:"Feb 2020",method:"Decision",round:"R5",time:"5:00"},
+      {r:"W",opp:"Thiago Santos",event:"UFC 239",date:"Jul 2019",method:"Decision",round:"R5",time:"5:00"},
+      {r:"W",opp:"Anthony Smith",event:"UFC 235",date:"Mar 2019",method:"Decision",round:"R5",time:"5:00"},
+      {r:"NC",opp:"Daniel Cormier",event:"UFC 214",date:"Jul 2017",method:"NC (drugs)",round:"R3",time:"3:01"},
+      {r:"W",opp:"Daniel Cormier",event:"UFC 182",date:"Jan 2015",method:"Decision",round:"R5",time:"5:00"},
+      {r:"L",opp:"Matt Hamill",event:"TUF 10 Finale",date:"Dec 2009",method:"DQ",round:"R2",time:"4:09"},
+    ]
+  },
+  { id:2, name:"Islam Makhachev", nick:"", div:"Lightweight", nat:"🇷🇺", record:[27,1,0], nc:0, ranked:"Champion",
+    methods:{KO:4,Sub:9,Dec:14},
+    fights:[
+      {r:"W",opp:"Arman Tsarukyan",event:"UFC 311",date:"Jan 2025",method:"Decision",round:"R5",time:"5:00"},
+      {r:"W",opp:"Dustin Poirier",event:"UFC 302",date:"Jun 2024",method:"Submission",round:"R5",time:"3:42"},
+      {r:"W",opp:"Alexander Volkanovski",event:"UFC 294",date:"Oct 2023",method:"Submission",round:"R3",time:"3:59"},
+      {r:"W",opp:"Charles Oliveira",event:"UFC 280",date:"Oct 2022",method:"Submission",round:"R2",time:"3:16"},
+      {r:"W",opp:"Bobby Green",event:"UFC Fight Night",date:"Oct 2021",method:"Submission",round:"R1",time:"3:22"},
+      {r:"L",opp:"Thiago Moises",event:"UFC on ESPN 11",date:"Jul 2020",method:"Decision",round:"R5",time:"5:00"},
+    ]
+  },
+  { id:3, name:"Alex Pereira", nick:"Poatan", div:"Light Heavyweight", nat:"🇧🇷", record:[12,3,0], nc:0, ranked:"#1",
+    methods:{KO:9,Sub:0,Dec:3},
+    fights:[
+      {r:"L",opp:"Magomed Ankalaev",event:"UFC 313",date:"Mar 2025",method:"Decision",round:"R5",time:"5:00"},
+      {r:"W",opp:"Khalil Rountree",event:"UFC 307",date:"Oct 2024",method:"KO",round:"R1",time:"4:22"},
+      {r:"W",opp:"Jiří Procházka",event:"UFC 303",date:"Jun 2024",method:"KO",round:"R2",time:"4:23"},
+      {r:"W",opp:"Jiří Procházka",event:"UFC 295",date:"Nov 2023",method:"TKO",round:"R5",time:"0:13"},
+      {r:"W",opp:"Sean Strickland",event:"UFC 297",date:"Jan 2024",method:"TKO",round:"R4",time:"2:28"},
+      {r:"L",opp:"Israel Adesanya",event:"UFC 281",date:"Nov 2022",method:"Submission",round:"R5",time:"2:01"},
+    ]
+  },
+  { id:4, name:"Sean O'Malley", nick:"Sugar", div:"Bantamweight", nat:"🇺🇸", record:[18,2,0], nc:1, ranked:"#2",
+    methods:{KO:11,Sub:1,Dec:6},
+    fights:[
+      {r:"L",opp:"Merab Dvalishvili",event:"UFC 306",date:"Sep 2024",method:"Decision",round:"R5",time:"5:00"},
+      {r:"W",opp:"Marlon Vera",event:"UFC 299",date:"Mar 2024",method:"Decision",round:"R5",time:"5:00"},
+      {r:"W",opp:"Aljamain Sterling",event:"UFC 292",date:"Aug 2023",method:"KO",round:"R2",time:"2:29"},
+      {r:"W",opp:"Pedro Munhoz",event:"UFC 276",date:"Jul 2022",method:"TKO",round:"R1",time:"2:18"},
+    ]
+  },
+  { id:5, name:"Merab Dvalishvili", nick:"The Machine", div:"Bantamweight", nat:"🇬🇪", record:[18,4,0], nc:0, ranked:"Champion",
+    methods:{KO:3,Sub:4,Dec:11},
+    fights:[
+      {r:"W",opp:"Sean O'Malley",event:"UFC 306",date:"Sep 2024",method:"Decision",round:"R5",time:"5:00"},
+      {r:"W",opp:"Henry Cejudo",event:"UFC 298",date:"Feb 2024",method:"Decision",round:"R5",time:"5:00"},
+      {r:"W",opp:"Petr Yan",event:"UFC 282",date:"Dec 2022",method:"Decision",round:"R5",time:"5:00"},
+    ]
+  },
+  { id:6, name:"Charles Oliveira", nick:"Do Bronx", div:"Lightweight", nat:"🇧🇷", record:[34,10,0], nc:1, ranked:"#4",
+    methods:{KO:9,Sub:21,Dec:4},
+    fights:[
+      {r:"L",opp:"Arman Tsarukyan",event:"UFC 300",date:"Apr 2024",method:"Decision",round:"R3",time:"5:00"},
+      {r:"W",opp:"Beneil Dariush",event:"UFC 289",date:"Jun 2023",method:"Submission",round:"R3",time:"1:21"},
+      {r:"L",opp:"Islam Makhachev",event:"UFC 280",date:"Oct 2022",method:"Submission",round:"R2",time:"3:16"},
+      {r:"W",opp:"Justin Gaethje",event:"UFC 274",date:"May 2022",method:"Submission",round:"R3",time:"3:22"},
+    ]
+  },
+  { id:7, name:"Conor McGregor", nick:"The Notorious", div:"Lightweight", nat:"🇮🇪", record:[22,6,0], nc:0, ranked:"#15",
+    methods:{KO:19,Sub:1,Dec:2},
+    fights:[
+      {r:"L",opp:"Dustin Poirier",event:"UFC 264",date:"Jul 2021",method:"TKO",round:"R1",time:"5:00"},
+      {r:"L",opp:"Dustin Poirier",event:"UFC 257",date:"Jan 2021",method:"KO",round:"R2",time:"2:32"},
+      {r:"L",opp:"Khabib Nurmagomedov",event:"UFC 229",date:"Oct 2018",method:"Submission",round:"R4",time:"3:03"},
+      {r:"W",opp:"Eddie Alvarez",event:"UFC 205",date:"Nov 2016",method:"TKO",round:"R2",time:"2:04"},
+      {r:"W",opp:"Jose Aldo",event:"UFC 194",date:"Dec 2015",method:"KO",round:"R1",time:"0:13"},
+    ]
+  },
+  { id:8, name:"Khabib Nurmagomedov", nick:"The Eagle", div:"Lightweight", nat:"🇷🇺", record:[29,0,0], nc:0, ranked:"Retired",
+    methods:{KO:8,Sub:11,Dec:10},
+    fights:[
+      {r:"W",opp:"Justin Gaethje",event:"UFC 254",date:"Oct 2020",method:"Submission",round:"R2",time:"1:34"},
+      {r:"W",opp:"Dustin Poirier",event:"UFC 242",date:"Sep 2019",method:"Submission",round:"R3",time:"2:03"},
+      {r:"W",opp:"Conor McGregor",event:"UFC 229",date:"Oct 2018",method:"Submission",round:"R4",time:"3:03"},
+      {r:"W",opp:"Al Iaquinta",event:"UFC 223",date:"Apr 2018",method:"Decision",round:"R5",time:"5:00"},
+    ]
+  },
+  { id:9, name:"Magomed Ankalaev", nick:"", div:"Light Heavyweight", nat:"🇷🇺", record:[19,1,0], nc:0, ranked:"Champion",
+    methods:{KO:8,Sub:4,Dec:7},
+    fights:[
+      {r:"W",opp:"Alex Pereira",event:"UFC 313",date:"Mar 2025",method:"Decision",round:"R5",time:"5:00"},
+      {r:"W",opp:"Johnny Walker",event:"UFC 294",date:"Oct 2023",method:"Decision",round:"R3",time:"5:00"},
+      {r:"W",opp:"Aleksandar Rakic",event:"UFC 282",date:"Dec 2022",method:"KO",round:"R2",time:"2:18"},
+    ]
+  },
+  { id:10, name:"Arman Tsarukyan", nick:"Ahalkalakets", div:"Lightweight", nat:"🇦🇲", record:[22,3,0], nc:0, ranked:"#1",
+    methods:{KO:5,Sub:6,Dec:11},
+    fights:[
+      {r:"L",opp:"Islam Makhachev",event:"UFC 311",date:"Jan 2025",method:"Decision",round:"R5",time:"5:00"},
+      {r:"W",opp:"Charles Oliveira",event:"UFC 300",date:"Apr 2024",method:"Decision",round:"R3",time:"5:00"},
+      {r:"W",opp:"Beneil Dariush",event:"UFC Fight Night",date:"Jun 2023",method:"Decision",round:"R3",time:"5:00"},
+    ]
+  },
+];
+
+const EVENTS = [
+  { id:1, name:"UFC 311", date:"January 18, 2025", venue:"Intuit Dome", loc:"Inglewood, CA", status:"past",
+    main:{f1:{name:"Islam Makhachev",rec:"27-1",res:"W"},f2:{name:"Arman Tsarukyan",rec:"22-3",res:"L"},title:"LW Championship",method:"Decision (unanimous)"},
+    card:[{f1:"Merab Dvalishvili",f2:"Umar Nurmagomedov",method:"Draw"},{f1:"Renato Moicano",f2:"Beneil Dariush",method:"KO"}]
+  },
+  { id:2, name:"UFC 313", date:"March 8, 2025", venue:"T-Mobile Arena", loc:"Las Vegas, NV", status:"past",
+    main:{f1:{name:"Magomed Ankalaev",rec:"19-1",res:"W"},f2:{name:"Alex Pereira",rec:"12-3",res:"L"},title:"LHW Championship",method:"Decision (split)"},
+    card:[{f1:"Jack Della Maddalena",f2:"Michael Page",method:"Decision"},{f1:"Arman Tsarukyan",f2:"Renato Moicano",method:"KO"}]
+  },
+  { id:3, name:"UFC 314", date:"April 12, 2025", venue:"Kaseya Center", loc:"Miami, FL", status:"past",
+    main:{f1:{name:"Alexander Volkanovski",rec:"26-4",res:"W"},f2:{name:"Diego Lopes",rec:"23-6",res:"L"},title:"Interim FW Title",method:"Decision (unanimous)"},
+    card:[{f1:"Michael Chandler",f2:"Charles Oliveira",method:"KO"},{f1:"Kevin Holland",f2:"Reinier de Ridder",method:"Decision"}]
+  },
+  { id:4, name:"UFC 315", date:"May 10, 2025", venue:"Centre Bell", loc:"Montreal, QC", status:"past",
+    main:{f1:{name:"Belal Muhammad",rec:"24-3",res:"W"},f2:{name:"Jack Della Maddalena",rec:"16-2",res:"L"},title:"WW Championship",method:"Decision (unanimous)"},
+    card:[{f1:"Valentina Shevchenko",f2:"Manon Fiorot",method:"Decision"},{f1:"Marc-André Barriault",f2:"Jamie Pickett",method:"TKO"}]
+  },
+  { id:5, name:"UFC 316", date:"June 7, 2025", venue:"Prudential Center", loc:"Newark, NJ", status:"upcoming",
+    main:{f1:{name:"Islam Makhachev",rec:"27-1"},f2:{name:"Renato Moicano",rec:"21-6"},title:"LW Championship",method:""},
+    card:[{f1:"Merab Dvalishvili",f2:"Umar Nurmagomedov",method:""},{f1:"Caio Borralho",f2:"Brendan Allen",method:""}]
+  },
+];
+
+let currentTab = 'search';
+
+function initials(name) {
+  return name.split(' ').map(p => p[0]).slice(0,2).join('').toUpperCase();
+}
+
+function renderFighterList(q) {
+  q = (q || '').toLowerCase().trim();
+  const filtered = q
+    ? FIGHTERS.filter(f =>
+        f.name.toLowerCase().includes(q) ||
+        (f.nick && f.nick.toLowerCase().includes(q)) ||
+        f.div.toLowerCase().includes(q)
+      )
+    : FIGHTERS;
+
+  document.getElementById('listLabel').textContent =
+    q ? `${filtered.length} result${filtered.length !== 1 ? 's' : ''}` : 'All fighters';
+
+  const el = document.getElementById('fighterList');
+  if (!filtered.length) {
+    el.innerHTML = `<div class="empty"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><div>No fighters found</div></div>`;
+    return;
+  }
+
+  el.innerHTML = filtered.map(f => {
+    const [w, l, d] = f.record;
+    const isChamp = f.ranked === 'Champion';
+    const isRet = f.ranked === 'Retired';
+    const badgeCls = isChamp ? 'champ' : isRet ? 'ret' : 'rank';
+    const badgeTxt = isChamp ? '🏆 Champion' : f.ranked;
+    return `<div class="fighter-card" onclick="showFighter(${f.id})">
+      <div class="avatar ${isChamp ? 'champ' : ''}">${initials(f.name)}</div>
+      <div class="fi-info">
+        <div class="fi-name">${f.name}${f.nick ? ` <span class="fi-nick">"${f.nick}"</span>` : ''}</div>
+        <div class="fi-meta">${f.nat} · ${f.div}</div>
+        <div class="fi-record">
+          <span class="rec w">${w}W</span>
+          <span class="rec-sep">−</span>
+          <span class="rec l">${l}L</span>
+          <span class="rec-sep">−</span>
+          <span class="rec d">${d}D</span>
+          ${f.nc ? `<span class="nc-lbl">· ${f.nc}NC</span>` : ''}
+        </div>
+      </div>
+      <span class="badge ${badgeCls}">${badgeTxt}</span>
+    </div>`;
+  }).join('');
+}
+
+function showFighter(id) {
+  const f = FIGHTERS.find(x => x.id === id);
+  if (!f) return;
+  const [w, l, d] = f.record;
+  const isChamp = f.ranked === 'Champion';
+
+  document.getElementById('profileContent').innerHTML = `
+    <div class="profile-hero">
+      <div class="profile-avatar ${isChamp ? 'champ' : ''}">${initials(f.name)}</div>
+      <div>
+        <div class="profile-name">${f.name}</div>
+        ${f.nick ? `<div class="profile-nick">"${f.nick}"</div>` : ''}
+        <div class="profile-div">
+          <span>${f.nat}</span>
+          <span>${f.div}</span>
+          ${isChamp ? '<span style="color:var(--gold)">🏆 Champion</span>' : `<span style="color:var(--text3)">${f.ranked}</span>`}
+        </div>
+      </div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-box"><div class="stat-val w">${w}</div><div class="stat-lbl">Wins</div></div>
+      <div class="stat-box"><div class="stat-val l">${l}</div><div class="stat-lbl">Losses</div></div>
+      <div class="stat-box"><div class="stat-val nc">${d + f.nc}</div><div class="stat-lbl">D / NC</div></div>
+    </div>
+    <div class="methods-row">
+      <div class="method-pill">KO/TKO <strong>${f.methods.KO}</strong></div>
+      <div class="method-pill">Submission <strong>${f.methods.Sub}</strong></div>
+      <div class="method-pill">Decision <strong>${f.methods.Dec}</strong></div>
+    </div>
+    <div class="fight-history-lbl">Fight history</div>
+    ${f.fights.map(fight => `
+      <div class="fight-row">
+        <div class="fight-res ${fight.r}">${fight.r}</div>
+        <div class="fight-opp">
+          <div class="fight-opp-name">${fight.opp}</div>
+          <div class="fight-sub">${fight.event} · ${fight.date}</div>
+        </div>
+        <div class="fight-right">
+          <div class="fight-method">${fight.method}</div>
+          <div class="fight-meta">${fight.round} · ${fight.time}</div>
+        </div>
+      </div>
+    `).join('')}
+    <div style="height:12px"></div>
+  `;
+
+  showScreen('fighter');
+}
+
+function renderEvents() {
+  document.getElementById('eventsList').innerHTML = EVENTS.map(ev => {
+    const upcoming = ev.status === 'upcoming';
+    const hasRes = !!ev.main.f1.res;
+    return `<div class="event-card">
+      <div class="event-head">
+        <div>
+          <div class="event-name">${ev.name}</div>
+          <div class="event-date">${ev.date}</div>
+          <div class="event-venue">
+            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            ${ev.venue}, ${ev.loc}
+          </div>
+        </div>
+        <span class="status-pill ${ev.status}">${upcoming ? 'Upcoming' : 'Past'}</span>
+      </div>
+      <div class="main-event-block">
+        <div class="me-label">${ev.main.title} · Main event</div>
+        <div class="matchup">
+          <div class="fighter-side">
+            <div class="me-fighter-name">${ev.main.f1.name}</div>
+            <div class="me-fighter-rec">${ev.main.f1.rec}</div>
+            ${hasRes ? `<span class="me-result ${ev.main.f1.res}">${ev.main.f1.res === 'W' ? 'WIN' : 'LOSS'}</span>` : ''}
+          </div>
+          <div class="vs-badge">VS</div>
+          <div class="fighter-side right">
+            <div class="me-fighter-name">${ev.main.f2.name}</div>
+            <div class="me-fighter-rec">${ev.main.f2.rec}</div>
+            ${hasRes ? `<span class="me-result ${ev.main.f2.res}">${ev.main.f2.res === 'W' ? 'WIN' : 'LOSS'}</span>` : ''}
+          </div>
+        </div>
+        ${hasRes && ev.main.method ? `<div class="result-line">Result: ${ev.main.method}</div>` : ''}
+      </div>
+      ${ev.card.length ? `<div class="undercard">${ev.card.map(b => `
+        <div class="undercard-row">
+          ${b.f1} <span class="vs-small">vs</span> ${b.f2}
+          ${b.method ? `<span class="method-small">· ${b.method}</span>` : ''}
+        </div>`).join('')}
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function showScreen(name) {
+  ['search','fighter','events'].forEach(s => {
+    const el = document.getElementById(`screen-${s}`);
+    if (el) el.classList.toggle('hidden', s !== name);
+  });
+}
+
+function showTab(tab) {
+  currentTab = tab;
+  showScreen(tab);
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tab);
+  });
+}
+
+document.getElementById('searchInput').addEventListener('input', e => {
+  renderFighterList(e.target.value);
+});
+
+document.getElementById('backBtn').addEventListener('click', () => showTab(currentTab));
+
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => showTab(btn.dataset.tab));
+});
+
+renderFighterList('');
+renderEvents();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
