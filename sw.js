@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fightbase-v1';
+const CACHE_NAME = 'fightbase-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -23,6 +23,23 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  const url = new URL(e.request.url);
+
+  // Live API data: network-first, fall back to last cached response when offline.
+  if (url.pathname.startsWith('/api/')) {
+    e.respondWith(
+      fetch(e.request).then(response => {
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+        }
+        return response;
+      }).catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
+  // App shell: cache-first with background refresh.
   e.respondWith(
     caches.match(e.request).then(cached => {
       const network = fetch(e.request).then(response => {

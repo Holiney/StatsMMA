@@ -1,0 +1,21 @@
+{
+  "name": "statsmma",
+  "version": "1.0.0",
+  "description": "A mobile-first Progressive Web App for browsing MMA fighter records and events.",
+  "type": "module",
+  "main": "sw.js",
+  "scripts": {
+    "dev": "node scripts/dev-server.mjs",
+    "resolve-roster": "node scripts/resolve-roster.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://local_proxy@127.0.0.1:45441/git/Holiney/StatsMMA"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cheerio": "^1.0.0"
+  }
+}
