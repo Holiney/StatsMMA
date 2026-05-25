@@ -398,12 +398,37 @@
     .nav-btn.active { color: var(--accent); }
     .nav-btn svg { width: 22px; height: 22px; }
 
-    /* ── EMPTY STATE ── */
+    /* ── EMPTY / LOADING / ERROR ── */
     .empty {
       text-align: center; padding: 60px 24px;
       color: var(--text3); font-size: 14px;
     }
     .empty svg { width: 36px; height: 36px; margin-bottom: 10px; opacity: 0.4; }
+
+    .state {
+      text-align: center; padding: 56px 24px;
+      color: var(--text3); font-size: 14px;
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+    }
+    .spinner {
+      width: 26px; height: 26px; border-radius: 50%;
+      border: 2.5px solid var(--bg3); border-top-color: var(--accent);
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .retry-btn {
+      margin-top: 4px;
+      background: var(--accent-dim); color: var(--accent);
+      border: 0.5px solid rgba(224,48,48,0.3); border-radius: 8px;
+      padding: 8px 16px; font-family: 'Barlow', sans-serif;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    .retry-btn:active { opacity: 0.7; }
+    .data-note {
+      text-align: center; font-size: 10px; color: var(--text3);
+      padding: 14px 16px 4px; letter-spacing: 0.3px;
+    }
+    .skeleton-rec { color: var(--text3); font-style: italic; }
   </style>
 </head>
 <body>
@@ -458,204 +483,139 @@
 </div>
 
 <script>
-const FIGHTERS = [
-  { id:1, name:"Jon Jones", nick:"Bones", div:"Heavyweight", nat:"🇺🇸", record:[28,1,0], nc:1, ranked:"Champion",
-    methods:{KO:10,Sub:6,Dec:12},
-    fights:[
-      {r:"W",opp:"Stipe Miocic",event:"UFC 309",date:"Nov 2024",method:"TKO",round:"R3",time:"4:29"},
-      {r:"W",opp:"Ciryl Gane",event:"UFC 285",date:"Mar 2023",method:"Submission",round:"R1",time:"2:04"},
-      {r:"W",opp:"Dominick Reyes",event:"UFC 247",date:"Feb 2020",method:"Decision",round:"R5",time:"5:00"},
-      {r:"W",opp:"Thiago Santos",event:"UFC 239",date:"Jul 2019",method:"Decision",round:"R5",time:"5:00"},
-      {r:"W",opp:"Anthony Smith",event:"UFC 235",date:"Mar 2019",method:"Decision",round:"R5",time:"5:00"},
-      {r:"NC",opp:"Daniel Cormier",event:"UFC 214",date:"Jul 2017",method:"NC (drugs)",round:"R3",time:"3:01"},
-      {r:"W",opp:"Daniel Cormier",event:"UFC 182",date:"Jan 2015",method:"Decision",round:"R5",time:"5:00"},
-      {r:"L",opp:"Matt Hamill",event:"TUF 10 Finale",date:"Dec 2009",method:"DQ",round:"R2",time:"4:09"},
-    ]
-  },
-  { id:2, name:"Islam Makhachev", nick:"", div:"Lightweight", nat:"🇷🇺", record:[27,1,0], nc:0, ranked:"Champion",
-    methods:{KO:4,Sub:9,Dec:14},
-    fights:[
-      {r:"W",opp:"Arman Tsarukyan",event:"UFC 311",date:"Jan 2025",method:"Decision",round:"R5",time:"5:00"},
-      {r:"W",opp:"Dustin Poirier",event:"UFC 302",date:"Jun 2024",method:"Submission",round:"R5",time:"3:42"},
-      {r:"W",opp:"Alexander Volkanovski",event:"UFC 294",date:"Oct 2023",method:"Submission",round:"R3",time:"3:59"},
-      {r:"W",opp:"Charles Oliveira",event:"UFC 280",date:"Oct 2022",method:"Submission",round:"R2",time:"3:16"},
-      {r:"W",opp:"Bobby Green",event:"UFC Fight Night",date:"Oct 2021",method:"Submission",round:"R1",time:"3:22"},
-      {r:"L",opp:"Thiago Moises",event:"UFC on ESPN 11",date:"Jul 2020",method:"Decision",round:"R5",time:"5:00"},
-    ]
-  },
-  { id:3, name:"Alex Pereira", nick:"Poatan", div:"Light Heavyweight", nat:"🇧🇷", record:[12,3,0], nc:0, ranked:"#1",
-    methods:{KO:9,Sub:0,Dec:3},
-    fights:[
-      {r:"L",opp:"Magomed Ankalaev",event:"UFC 313",date:"Mar 2025",method:"Decision",round:"R5",time:"5:00"},
-      {r:"W",opp:"Khalil Rountree",event:"UFC 307",date:"Oct 2024",method:"KO",round:"R1",time:"4:22"},
-      {r:"W",opp:"Jiří Procházka",event:"UFC 303",date:"Jun 2024",method:"KO",round:"R2",time:"4:23"},
-      {r:"W",opp:"Jiří Procházka",event:"UFC 295",date:"Nov 2023",method:"TKO",round:"R5",time:"0:13"},
-      {r:"W",opp:"Sean Strickland",event:"UFC 297",date:"Jan 2024",method:"TKO",round:"R4",time:"2:28"},
-      {r:"L",opp:"Israel Adesanya",event:"UFC 281",date:"Nov 2022",method:"Submission",round:"R5",time:"2:01"},
-    ]
-  },
-  { id:4, name:"Sean O'Malley", nick:"Sugar", div:"Bantamweight", nat:"🇺🇸", record:[18,2,0], nc:1, ranked:"#2",
-    methods:{KO:11,Sub:1,Dec:6},
-    fights:[
-      {r:"L",opp:"Merab Dvalishvili",event:"UFC 306",date:"Sep 2024",method:"Decision",round:"R5",time:"5:00"},
-      {r:"W",opp:"Marlon Vera",event:"UFC 299",date:"Mar 2024",method:"Decision",round:"R5",time:"5:00"},
-      {r:"W",opp:"Aljamain Sterling",event:"UFC 292",date:"Aug 2023",method:"KO",round:"R2",time:"2:29"},
-      {r:"W",opp:"Pedro Munhoz",event:"UFC 276",date:"Jul 2022",method:"TKO",round:"R1",time:"2:18"},
-    ]
-  },
-  { id:5, name:"Merab Dvalishvili", nick:"The Machine", div:"Bantamweight", nat:"🇬🇪", record:[18,4,0], nc:0, ranked:"Champion",
-    methods:{KO:3,Sub:4,Dec:11},
-    fights:[
-      {r:"W",opp:"Sean O'Malley",event:"UFC 306",date:"Sep 2024",method:"Decision",round:"R5",time:"5:00"},
-      {r:"W",opp:"Henry Cejudo",event:"UFC 298",date:"Feb 2024",method:"Decision",round:"R5",time:"5:00"},
-      {r:"W",opp:"Petr Yan",event:"UFC 282",date:"Dec 2022",method:"Decision",round:"R5",time:"5:00"},
-    ]
-  },
-  { id:6, name:"Charles Oliveira", nick:"Do Bronx", div:"Lightweight", nat:"🇧🇷", record:[34,10,0], nc:1, ranked:"#4",
-    methods:{KO:9,Sub:21,Dec:4},
-    fights:[
-      {r:"L",opp:"Arman Tsarukyan",event:"UFC 300",date:"Apr 2024",method:"Decision",round:"R3",time:"5:00"},
-      {r:"W",opp:"Beneil Dariush",event:"UFC 289",date:"Jun 2023",method:"Submission",round:"R3",time:"1:21"},
-      {r:"L",opp:"Islam Makhachev",event:"UFC 280",date:"Oct 2022",method:"Submission",round:"R2",time:"3:16"},
-      {r:"W",opp:"Justin Gaethje",event:"UFC 274",date:"May 2022",method:"Submission",round:"R3",time:"3:22"},
-    ]
-  },
-  { id:7, name:"Conor McGregor", nick:"The Notorious", div:"Lightweight", nat:"🇮🇪", record:[22,6,0], nc:0, ranked:"#15",
-    methods:{KO:19,Sub:1,Dec:2},
-    fights:[
-      {r:"L",opp:"Dustin Poirier",event:"UFC 264",date:"Jul 2021",method:"TKO",round:"R1",time:"5:00"},
-      {r:"L",opp:"Dustin Poirier",event:"UFC 257",date:"Jan 2021",method:"KO",round:"R2",time:"2:32"},
-      {r:"L",opp:"Khabib Nurmagomedov",event:"UFC 229",date:"Oct 2018",method:"Submission",round:"R4",time:"3:03"},
-      {r:"W",opp:"Eddie Alvarez",event:"UFC 205",date:"Nov 2016",method:"TKO",round:"R2",time:"2:04"},
-      {r:"W",opp:"Jose Aldo",event:"UFC 194",date:"Dec 2015",method:"KO",round:"R1",time:"0:13"},
-    ]
-  },
-  { id:8, name:"Khabib Nurmagomedov", nick:"The Eagle", div:"Lightweight", nat:"🇷🇺", record:[29,0,0], nc:0, ranked:"Retired",
-    methods:{KO:8,Sub:11,Dec:10},
-    fights:[
-      {r:"W",opp:"Justin Gaethje",event:"UFC 254",date:"Oct 2020",method:"Submission",round:"R2",time:"1:34"},
-      {r:"W",opp:"Dustin Poirier",event:"UFC 242",date:"Sep 2019",method:"Submission",round:"R3",time:"2:03"},
-      {r:"W",opp:"Conor McGregor",event:"UFC 229",date:"Oct 2018",method:"Submission",round:"R4",time:"3:03"},
-      {r:"W",opp:"Al Iaquinta",event:"UFC 223",date:"Apr 2018",method:"Decision",round:"R5",time:"5:00"},
-    ]
-  },
-  { id:9, name:"Magomed Ankalaev", nick:"", div:"Light Heavyweight", nat:"🇷🇺", record:[19,1,0], nc:0, ranked:"Champion",
-    methods:{KO:8,Sub:4,Dec:7},
-    fights:[
-      {r:"W",opp:"Alex Pereira",event:"UFC 313",date:"Mar 2025",method:"Decision",round:"R5",time:"5:00"},
-      {r:"W",opp:"Johnny Walker",event:"UFC 294",date:"Oct 2023",method:"Decision",round:"R3",time:"5:00"},
-      {r:"W",opp:"Aleksandar Rakic",event:"UFC 282",date:"Dec 2022",method:"KO",round:"R2",time:"2:18"},
-    ]
-  },
-  { id:10, name:"Arman Tsarukyan", nick:"Ahalkalakets", div:"Lightweight", nat:"🇦🇲", record:[22,3,0], nc:0, ranked:"#1",
-    methods:{KO:5,Sub:6,Dec:11},
-    fights:[
-      {r:"L",opp:"Islam Makhachev",event:"UFC 311",date:"Jan 2025",method:"Decision",round:"R5",time:"5:00"},
-      {r:"W",opp:"Charles Oliveira",event:"UFC 300",date:"Apr 2024",method:"Decision",round:"R3",time:"5:00"},
-      {r:"W",opp:"Beneil Dariush",event:"UFC Fight Night",date:"Jun 2023",method:"Decision",round:"R3",time:"5:00"},
-    ]
-  },
-];
+const API = {
+  fighters: '/api/fighters',
+  fighter: (id) => `/api/fighter?id=${encodeURIComponent(id)}`,
+  events: '/api/events',
+};
 
-const EVENTS = [
-  { id:1, name:"UFC 311", date:"January 18, 2025", venue:"Intuit Dome", loc:"Inglewood, CA", status:"past",
-    main:{f1:{name:"Islam Makhachev",rec:"27-1",res:"W"},f2:{name:"Arman Tsarukyan",rec:"22-3",res:"L"},title:"LW Championship",method:"Decision (unanimous)"},
-    card:[{f1:"Merab Dvalishvili",f2:"Umar Nurmagomedov",method:"Draw"},{f1:"Renato Moicano",f2:"Beneil Dariush",method:"KO"}]
-  },
-  { id:2, name:"UFC 313", date:"March 8, 2025", venue:"T-Mobile Arena", loc:"Las Vegas, NV", status:"past",
-    main:{f1:{name:"Magomed Ankalaev",rec:"19-1",res:"W"},f2:{name:"Alex Pereira",rec:"12-3",res:"L"},title:"LHW Championship",method:"Decision (split)"},
-    card:[{f1:"Jack Della Maddalena",f2:"Michael Page",method:"Decision"},{f1:"Arman Tsarukyan",f2:"Renato Moicano",method:"KO"}]
-  },
-  { id:3, name:"UFC 314", date:"April 12, 2025", venue:"Kaseya Center", loc:"Miami, FL", status:"past",
-    main:{f1:{name:"Alexander Volkanovski",rec:"26-4",res:"W"},f2:{name:"Diego Lopes",rec:"23-6",res:"L"},title:"Interim FW Title",method:"Decision (unanimous)"},
-    card:[{f1:"Michael Chandler",f2:"Charles Oliveira",method:"KO"},{f1:"Kevin Holland",f2:"Reinier de Ridder",method:"Decision"}]
-  },
-  { id:4, name:"UFC 315", date:"May 10, 2025", venue:"Centre Bell", loc:"Montreal, QC", status:"past",
-    main:{f1:{name:"Belal Muhammad",rec:"24-3",res:"W"},f2:{name:"Jack Della Maddalena",rec:"16-2",res:"L"},title:"WW Championship",method:"Decision (unanimous)"},
-    card:[{f1:"Valentina Shevchenko",f2:"Manon Fiorot",method:"Decision"},{f1:"Marc-André Barriault",f2:"Jamie Pickett",method:"TKO"}]
-  },
-  { id:5, name:"UFC 316", date:"June 7, 2025", venue:"Prudential Center", loc:"Newark, NJ", status:"upcoming",
-    main:{f1:{name:"Islam Makhachev",rec:"27-1"},f2:{name:"Renato Moicano",rec:"21-6"},title:"LW Championship",method:""},
-    card:[{f1:"Merab Dvalishvili",f2:"Umar Nurmagomedov",method:""},{f1:"Caio Borralho",f2:"Brendan Allen",method:""}]
-  },
-];
+const PIN_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+const SEARCH_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>';
 
 let currentTab = 'search';
+let roster = [];
+let rosterLoaded = false;
+let eventsLoaded = false;
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
 
 function initials(name) {
-  return name.split(' ').map(p => p[0]).slice(0,2).join('').toUpperCase();
+  return (name || '').split(' ').map((p) => p[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
+}
+
+function fmtDate(d) {
+  if (!d) return '';
+  const m = d.match(/^([A-Za-z]+)\s*\/\s*(\d+)\s*\/\s*(\d+)$/);
+  if (m) return `${m[1]} ${parseInt(m[2], 10)}, ${m[3]}`;
+  const dt = new Date(d);
+  if (!isNaN(dt.getTime())) return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return d;
+}
+
+function loadingState(txt) {
+  return `<div class="state"><div class="spinner"></div><div>${esc(txt)}</div></div>`;
+}
+function errorState(txt, retryFn) {
+  return `<div class="state"><div>${esc(txt)}</div>${retryFn ? `<button class="retry-btn" onclick="${retryFn}()">Retry</button>` : ''}</div>`;
+}
+function emptyState(txt) {
+  return `<div class="empty">${SEARCH_SVG}<div>${esc(txt)}</div></div>`;
+}
+
+async function loadRoster() {
+  const el = document.getElementById('fighterList');
+  el.innerHTML = loadingState('Loading fighters from Sherdog…');
+  try {
+    const res = await fetch(API.fighters);
+    if (!res.ok) throw new Error('bad status');
+    const data = await res.json();
+    roster = data.fighters || [];
+    rosterLoaded = true;
+    renderFighterList(document.getElementById('searchInput').value);
+  } catch (e) {
+    el.innerHTML = errorState('Could not load fighters.', 'loadRoster');
+  }
 }
 
 function renderFighterList(q) {
+  if (!rosterLoaded) return;
   q = (q || '').toLowerCase().trim();
   const filtered = q
-    ? FIGHTERS.filter(f =>
+    ? roster.filter((f) =>
         f.name.toLowerCase().includes(q) ||
         (f.nick && f.nick.toLowerCase().includes(q)) ||
-        f.div.toLowerCase().includes(q)
-      )
-    : FIGHTERS;
+        (f.div && f.div.toLowerCase().includes(q)))
+    : roster;
 
   document.getElementById('listLabel').textContent =
     q ? `${filtered.length} result${filtered.length !== 1 ? 's' : ''}` : 'All fighters';
 
   const el = document.getElementById('fighterList');
-  if (!filtered.length) {
-    el.innerHTML = `<div class="empty"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><div>No fighters found</div></div>`;
-    return;
-  }
+  if (!filtered.length) { el.innerHTML = emptyState('No fighters found'); return; }
 
-  el.innerHTML = filtered.map(f => {
-    const [w, l, d] = f.record;
+  el.innerHTML = filtered.map((f) => {
     const isChamp = f.ranked === 'Champion';
     const isRet = f.ranked === 'Retired';
     const badgeCls = isChamp ? 'champ' : isRet ? 'ret' : 'rank';
-    const badgeTxt = isChamp ? '🏆 Champion' : f.ranked;
-    return `<div class="fighter-card" onclick="showFighter(${f.id})">
-      <div class="avatar ${isChamp ? 'champ' : ''}">${initials(f.name)}</div>
+    const badgeTxt = isChamp ? '🏆 Champion' : esc(f.ranked || '');
+    let rec;
+    if (f.record) {
+      const [w, l, d] = f.record;
+      rec = `<span class="rec w">${w}W</span><span class="rec-sep">−</span>` +
+            `<span class="rec l">${l}L</span><span class="rec-sep">−</span>` +
+            `<span class="rec d">${d}D</span>` + (f.nc ? `<span class="nc-lbl">· ${f.nc}NC</span>` : '');
+    } else {
+      rec = `<span class="skeleton-rec">record unavailable</span>`;
+    }
+    return `<div class="fighter-card" onclick="showFighter('${esc(f.id)}')">
+      <div class="avatar ${isChamp ? 'champ' : ''}">${esc(initials(f.name))}</div>
       <div class="fi-info">
-        <div class="fi-name">${f.name}${f.nick ? ` <span class="fi-nick">"${f.nick}"</span>` : ''}</div>
-        <div class="fi-meta">${f.nat} · ${f.div}</div>
-        <div class="fi-record">
-          <span class="rec w">${w}W</span>
-          <span class="rec-sep">−</span>
-          <span class="rec l">${l}L</span>
-          <span class="rec-sep">−</span>
-          <span class="rec d">${d}D</span>
-          ${f.nc ? `<span class="nc-lbl">· ${f.nc}NC</span>` : ''}
-        </div>
+        <div class="fi-name">${esc(f.name)}${f.nick ? ` <span class="fi-nick">"${esc(f.nick)}"</span>` : ''}</div>
+        <div class="fi-meta">${esc(f.nat || '')} · ${esc(f.div || '')}</div>
+        <div class="fi-record">${rec}</div>
       </div>
-      <span class="badge ${badgeCls}">${badgeTxt}</span>
+      ${f.ranked ? `<span class="badge ${badgeCls}">${badgeTxt}</span>` : ''}
     </div>`;
   }).join('');
 }
 
-function showFighter(id) {
-  const f = FIGHTERS.find(x => x.id === id);
-  if (!f) return;
-  const [w, l, d] = f.record;
+async function showFighter(id) {
+  showScreen('fighter');
+  document.getElementById('profileContent').innerHTML = loadingState('Loading fighter…');
+  try {
+    const res = await fetch(API.fighter(id));
+    if (!res.ok) throw new Error('bad status');
+    const { fighter } = await res.json();
+    renderProfile(fighter);
+  } catch (e) {
+    document.getElementById('profileContent').innerHTML = errorState('Could not load this fighter.', null);
+  }
+}
+
+function renderProfile(f) {
+  const [w, l, d] = f.record || [0, 0, 0];
   const isChamp = f.ranked === 'Champion';
-  const { KO, Sub, Dec } = f.methods;
+  const { KO = 0, Sub = 0, Dec = 0 } = f.methods || {};
   const decided = w + l;
   const winRate = decided ? Math.round((w / decided) * 100) : 0;
   const finishRate = w ? Math.round(((KO + Sub) / w) * 100) : 0;
-  const ncTxt = [
-    d ? `${d} D` : '',
-    f.nc ? `${f.nc} NC` : ''
-  ].filter(Boolean).join(' · ');
+  const ncTxt = [d ? `${d} D` : '', f.nc ? `${f.nc} NC` : ''].filter(Boolean).join(' · ');
 
   document.getElementById('profileContent').innerHTML = `
     <div class="profile-hero ${isChamp ? 'champ' : ''}">
-      <div class="profile-avatar ${isChamp ? 'champ' : ''}">${initials(f.name)}</div>
+      <div class="profile-avatar ${isChamp ? 'champ' : ''}">${esc(initials(f.name))}</div>
       <div>
-        <div class="profile-name">${f.name}</div>
-        ${f.nick ? `<div class="profile-nick">"${f.nick}"</div>` : ''}
+        <div class="profile-name">${esc(f.name)}</div>
+        ${f.nick ? `<div class="profile-nick">"${esc(f.nick)}"</div>` : ''}
         <div class="profile-div">
-          <span>${f.nat}</span>
-          <span>${f.div}</span>
-          ${isChamp ? '<span style="color:var(--gold)">🏆 Champion</span>' : `<span style="color:var(--text3)">${f.ranked}</span>`}
+          <span>${esc(f.nat || '')}</span>
+          <span>${esc(f.div || '')}</span>
+          ${f.ranked ? (isChamp ? '<span style="color:var(--gold)">🏆 Champion</span>' : `<span style="color:var(--text3)">${esc(f.ranked)}</span>`) : ''}
         </div>
-        <div class="profile-rec-line">${w}-${l}-${d}${ncTxt ? ` <span class="nc">(${ncTxt})</span>` : ''}</div>
+        <div class="profile-rec-line">${w}-${l}-${d}${ncTxt ? ` <span class="nc">(${esc(ncTxt)})</span>` : ''}</div>
       </div>
     </div>
     <div class="stats-grid">
@@ -679,81 +639,70 @@ function showFighter(id) {
         <span class="leg"><span class="dot dec"></span>Decision <b>${Dec}</b></span>
       </div>
     </div>
-    <div class="fight-history-lbl">Fight history</div>
-    ${f.fights.map(fight => `
-      <div class="fight-row">
-        <div class="fight-res ${fight.r}">${fight.r}</div>
-        <div class="fight-opp">
-          <div class="fight-opp-name">${fight.opp}</div>
-          <div class="fight-sub">${fight.event} · ${fight.date}</div>
+    <div class="fight-history-lbl">Fight history · ${(f.fights || []).length} bouts</div>
+    ${(f.fights || []).map((fight) => {
+      const meta = [fight.round ? `R${esc(fight.round)}` : '', esc(fight.time || '')].filter(Boolean).join(' · ');
+      const oppClickable = fight.oppId ? ` onclick="showFighter('${esc(fight.oppId)}')" style="cursor:pointer"` : '';
+      return `<div class="fight-row">
+        <div class="fight-res ${esc(fight.r)}">${esc(fight.r)}</div>
+        <div class="fight-opp"${oppClickable}>
+          <div class="fight-opp-name">${esc(fight.opp)}</div>
+          <div class="fight-sub">${esc(fight.event)} · ${esc(fmtDate(fight.date))}</div>
         </div>
         <div class="fight-right">
-          <div class="fight-method">${fight.method}</div>
-          <div class="fight-meta">${fight.round} · ${fight.time}</div>
+          <div class="fight-method">${esc(fight.method)}</div>
+          <div class="fight-meta">${meta}</div>
         </div>
-      </div>
-    `).join('')}
-    <div style="height:12px"></div>
-  `;
-
-  showScreen('fighter');
+      </div>`;
+    }).join('')}
+    <div class="data-note">Live data from Sherdog.com</div>
+    <div style="height:12px"></div>`;
 }
 
 function eventCard(ev) {
-    const upcoming = ev.status === 'upcoming';
-    const hasRes = !!ev.main.f1.res;
-    return `<div class="event-card">
-      <div class="event-head">
-        <div>
-          <div class="event-name">${ev.name}</div>
-          <div class="event-date">${ev.date}</div>
-          <div class="event-venue">
-            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            ${ev.venue}, ${ev.loc}
-          </div>
-        </div>
-        <span class="status-pill ${ev.status}">${upcoming ? 'Upcoming' : 'Past'}</span>
-      </div>
-      <div class="main-event-block">
-        <div class="me-label">${ev.main.title} · Main event</div>
-        <div class="matchup">
-          <div class="fighter-side">
-            <div class="me-fighter-name">${ev.main.f1.name}</div>
-            <div class="me-fighter-rec">${ev.main.f1.rec}</div>
-            ${hasRes ? `<span class="me-result ${ev.main.f1.res}">${ev.main.f1.res === 'W' ? 'WIN' : 'LOSS'}</span>` : ''}
-          </div>
-          <div class="vs-badge">VS</div>
-          <div class="fighter-side right">
-            <div class="me-fighter-name">${ev.main.f2.name}</div>
-            <div class="me-fighter-rec">${ev.main.f2.rec}</div>
-            ${hasRes ? `<span class="me-result ${ev.main.f2.res}">${ev.main.f2.res === 'W' ? 'WIN' : 'LOSS'}</span>` : ''}
-          </div>
-        </div>
-        ${hasRes && ev.main.method ? `<div class="result-line">Result: ${ev.main.method}</div>` : ''}
-      </div>
-      ${ev.card.length ? `<div class="undercard">${ev.card.map(b => `
-        <div class="undercard-row">
-          ${b.f1} <span class="vs-small">vs</span> ${b.f2}
-          ${b.method ? `<span class="method-small">· ${b.method}</span>` : ''}
-        </div>`).join('')}
-      </div>` : ''}
+  const sides = ev.headline ? ev.headline.split(/\s+vs\.?\s+/i).map((s) => s.trim()).filter(Boolean) : [];
+  let matchup = '';
+  if (sides.length === 2) {
+    matchup = `<div class="matchup">
+      <div class="fighter-side"><div class="me-fighter-name">${esc(sides[0])}</div></div>
+      <div class="vs-badge">VS</div>
+      <div class="fighter-side right"><div class="me-fighter-name">${esc(sides[1])}</div></div>
     </div>`;
+  } else if (ev.headline) {
+    matchup = `<div class="me-fighter-name">${esc(ev.headline)}</div>`;
+  }
+  return `<div class="event-card">
+    <div class="event-head">
+      <div>
+        <div class="event-name">${esc(ev.title || ev.name)}</div>
+        <div class="event-date">${esc(fmtDate(ev.date))}</div>
+        ${ev.location ? `<div class="event-venue">${PIN_SVG} ${esc(ev.location)}</div>` : ''}
+      </div>
+      <span class="status-pill ${ev.status}">${ev.status === 'upcoming' ? 'Upcoming' : 'Past'}</span>
+    </div>
+    ${matchup ? `<div class="main-event-block"><div class="me-label">Main event</div>${matchup}</div>` : ''}
+  </div>`;
 }
 
-function renderEvents() {
-  const byDate = (a, b) => new Date(a.date) - new Date(b.date);
-  const upcoming = EVENTS.filter(e => e.status === 'upcoming').sort(byDate);
-  const past = EVENTS.filter(e => e.status !== 'upcoming').sort((a, b) => byDate(b, a));
-
-  let html = '';
-  if (upcoming.length) html += `<div class="events-group-lbl">Upcoming</div>` + upcoming.map(eventCard).join('');
-  if (past.length) html += `<div class="events-group-lbl">Past results</div>` + past.map(eventCard).join('');
-  if (!html) html = `<div class="empty">No events</div>`;
-  document.getElementById('eventsList').innerHTML = html;
+async function loadEvents() {
+  const el = document.getElementById('eventsList');
+  el.innerHTML = loadingState('Loading events from Sherdog…');
+  try {
+    const res = await fetch(API.events);
+    if (!res.ok) throw new Error('bad status');
+    const data = await res.json();
+    let html = '';
+    if (data.upcoming && data.upcoming.length) html += `<div class="events-group-lbl">Upcoming</div>` + data.upcoming.map(eventCard).join('');
+    if (data.past && data.past.length) html += `<div class="events-group-lbl">Past results</div>` + data.past.map(eventCard).join('');
+    el.innerHTML = html || emptyState('No events');
+    eventsLoaded = true;
+  } catch (e) {
+    el.innerHTML = errorState('Could not load events.', 'loadEvents');
+  }
 }
 
 function showScreen(name) {
-  ['search','fighter','events'].forEach(s => {
+  ['search', 'fighter', 'events'].forEach((s) => {
     const el = document.getElementById(`screen-${s}`);
     if (el) el.classList.toggle('hidden', s !== name);
   });
@@ -762,23 +711,19 @@ function showScreen(name) {
 function showTab(tab) {
   currentTab = tab;
   showScreen(tab);
-  document.querySelectorAll('.nav-btn').forEach(btn => {
+  document.querySelectorAll('.nav-btn').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.tab === tab);
   });
+  if (tab === 'events' && !eventsLoaded) loadEvents();
 }
 
-document.getElementById('searchInput').addEventListener('input', e => {
-  renderFighterList(e.target.value);
-});
-
+document.getElementById('searchInput').addEventListener('input', (e) => renderFighterList(e.target.value));
 document.getElementById('backBtn').addEventListener('click', () => showTab(currentTab));
-
-document.querySelectorAll('.nav-btn').forEach(btn => {
+document.querySelectorAll('.nav-btn').forEach((btn) => {
   btn.addEventListener('click', () => showTab(btn.dataset.tab));
 });
 
-renderFighterList('');
-renderEvents();
+loadRoster();
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
